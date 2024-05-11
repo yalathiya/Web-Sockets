@@ -11,27 +11,41 @@ namespace WsServer
             var builder = WebApplication.CreateBuilder(args);
 
             // server url 
-            builder.WebHost.UseUrls("https://localhost:6969");
-            
+            builder.WebHost.UseUrls("https://localhost:44383");
+
             var app = builder.Build();
             app.UseWebSockets();
 
             // accepting web socket request 
-            app.Map("/ws", async context => 
-            { 
-                if(context.WebSockets.IsWebSocketRequest)
+            app.Map("/ws", async context =>
+            {
+                if (context.WebSockets.IsWebSocketRequest)
                 {
                     // using web socket  
                     using (var ws = await context.WebSockets.AcceptWebSocketAsync())
                     {
-                        // send message 
-                        var message = "Hello from server !!";
-                        var bytes = Encoding.UTF8.GetBytes(message);
-                        var arraySegment = new ArraySegment<byte>(bytes, 0, bytes.Length);
-                        await ws.SendAsync(arraySegment,
-                                           WebSocketMessageType.Text,
-                                           true,
-                                           CancellationToken.None);
+                        while (true)
+                        {
+                            // send message 
+                            var message = DateTime.Now.ToString("HH:mm:ss") + "Hello from server !!" ;
+                            var bytes = Encoding.UTF8.GetBytes(message);
+                            var arraySegment = new ArraySegment<byte>(bytes, 0, bytes.Length);
+
+                            if(ws.State == WebSocketState.Open)
+                            {
+                                await ws.SendAsync(arraySegment,
+                                               WebSocketMessageType.Text,
+                                               true,
+                                               CancellationToken.None);
+
+                            }
+                            else if(ws.State == WebSocketState.Closed || 
+                                    ws.State == WebSocketState.Aborted)
+                            {
+                                break;
+                            }
+                            Thread.Sleep(1000);
+                        }
                     }
                 }
                 else
