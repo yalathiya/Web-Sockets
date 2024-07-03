@@ -22,30 +22,29 @@ namespace WsServer
                 if (context.WebSockets.IsWebSocketRequest)
                 {
                     // using web socket  
-                    using (var ws = await context.WebSockets.AcceptWebSocketAsync())
+                    using var ws = await context.WebSockets.AcceptWebSocketAsync();
+
+                    while (true)
                     {
-                        while (true)
+                        // send message 
+                        var message = DateTime.Now.ToString("HH:mm:ss") + "Hello from server !!";
+                        var bytes = Encoding.UTF8.GetBytes(message);
+                        var arraySegment = new ArraySegment<byte>(bytes, 0, bytes.Length);
+
+                        if (ws.State == WebSocketState.Open)
                         {
-                            // send message 
-                            var message = DateTime.Now.ToString("HH:mm:ss") + "Hello from server !!" ;
-                            var bytes = Encoding.UTF8.GetBytes(message);
-                            var arraySegment = new ArraySegment<byte>(bytes, 0, bytes.Length);
+                            await ws.SendAsync(arraySegment,
+                                           WebSocketMessageType.Text,
+                                           true,
+                                           CancellationToken.None);
 
-                            if(ws.State == WebSocketState.Open)
-                            {
-                                await ws.SendAsync(arraySegment,
-                                               WebSocketMessageType.Text,
-                                               true,
-                                               CancellationToken.None);
-
-                            }
-                            else if(ws.State == WebSocketState.Closed || 
-                                    ws.State == WebSocketState.Aborted)
-                            {
-                                break;
-                            }
-                            Thread.Sleep(1000);
                         }
+                        else if (ws.State == WebSocketState.Closed ||
+                                ws.State == WebSocketState.Aborted)
+                        {
+                            break;
+                        }
+                        Thread.Sleep(1000);
                     }
                 }
                 else
